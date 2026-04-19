@@ -18,6 +18,7 @@ dependencies = [
   "seaborn>=0.13,<0.14",
   "fastapi>=0.110,<1.0",
   "uvicorn[standard]>=0.29,<0.31",
+  "feast[redis]>=0.40,<0.42",
 ]
 
 [tool.uv.extra-build-dependencies]
@@ -27,4 +28,3 @@ pyarrow = ["setuptools<82"]
 where = ["."]
 include = ["api*", "src*"]
 namespaces = true
-

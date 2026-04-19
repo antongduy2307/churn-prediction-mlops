@@ -90,3 +90,32 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 - `POST /predict` accepts a direct feature payload and returns:
   - `churn_probability`
   - `churn_prediction`
+
+## Local Feast Runtime
+Phase 2 uses the local Feast repository under `feature_repo/`. The runtime is standardized so Feast commands are executed from inside `feature_repo/`, which keeps the relative parquet source path stable.
+
+### Start local Redis
+If Redis is installed locally:
+```bash
+redis-server --port 6379
+```
+
+If using Docker:
+```bash
+docker run --name churn-redis -p 6379:6379 redis:7
+```
+
+### Apply the Feast repo
+```bash
+python scripts/run_feast_apply.py
+```
+
+### Materialize features incrementally
+```bash
+python scripts/materialize_features.py
+```
+
+The materialization wrapper generates the current UTC timestamp at runtime and calls:
+```bash
+feast materialize-incremental <current-utc-timestamp>
+```

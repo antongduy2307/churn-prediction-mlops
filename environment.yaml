@@ -12,3 +12,6 @@ dependencies:
   - seaborn>=0.13,<0.14
   - fastapi>=0.110,<1.0
   - uvicorn>=0.29,<0.31
+  - pip
+  - pip:
+      - feast[redis]>=0.40,<0.42

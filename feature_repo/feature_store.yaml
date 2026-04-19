@@ -1,0 +1,10 @@
+project: churn_features
+provider: local
+registry: registry.db
+
+offline_store:
+  type: file
+
+online_store:
+  type: redis
+  connection_string: "localhost:6379"
