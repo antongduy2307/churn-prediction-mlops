@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "customer-churn-phase1"
+version = "0.1.0"
+description = "Phase 1 local baseline for a customer churn prediction MLOps project."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26,<2.1",
+  "pandas>=2.1,<2.3",
+  "scikit-learn>=1.4,<1.6",
+  "pyarrow>=23.0.1",
+  "PyYAML>=6.0,<7",
+  "matplotlib>=3.8,<3.10",
+  "seaborn>=0.13,<0.14",
+  "fastapi>=0.110,<1.0",
+  "uvicorn[standard]>=0.29,<0.31",
+]
+
+[tool.uv.extra-build-dependencies]
+pyarrow = ["setuptools<82"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["api*", "src*"]
+namespaces = true
+

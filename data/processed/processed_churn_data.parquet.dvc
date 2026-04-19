@@ -1,0 +1,5 @@
+outs:
+- md5: 375d294bd088dc5696f50583c316ae2d
+  size: 535277
+  hash: md5
+  path: processed_churn_data.parquet

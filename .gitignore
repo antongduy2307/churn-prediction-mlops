@@ -1,0 +1,22 @@
+.omx/
+.venv/
+
+# Python cache and local build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# DVC local cache/runtime files
+.dvc/cache/
+.dvc/tmp/
+.dvc/config.local
+
+# DVC-tracked data artifacts (keep the .dvc files)
+data/raw/train_period_1.csv
+data/processed/df_processed.csv
+data/processed/processed_churn_data.parquet
+
+# Generated local outputs
+models/
+reports/

@@ -1,0 +1,43 @@
+data:
+  training_data_path: data/processed/processed_churn_data.parquet
+
+features:
+  target_column: churned
+  training_features:
+    - age
+    - gender
+    - tenure_months
+    - subscription_type
+    - contract_length
+    - usage_frequency
+    - support_calls
+    - payment_delay_days
+    - total_spend
+    - last_interaction_days
+  categorical_features:
+    - gender
+    - subscription_type
+    - contract_length
+  excluded_columns:
+    - customer_id
+    - event_timestamp
+    - created_timestamp
+
+split:
+  test_size: 0.2
+  random_state: 42
+  stratify: true
+
+model:
+  name: random_forest
+  params:
+    n_estimators: 200
+    max_depth: null
+    min_samples_split: 2
+    min_samples_leaf: 1
+    random_state: 42
+    n_jobs: -1
+
+output:
+  model_bundle_path: models/random_forest_bundle.pkl
+  metrics_path: models/random_forest_metrics.json
