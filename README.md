@@ -176,3 +176,22 @@ Not implemented yet:
 - `/predict/{customer_id}`
 - Batch retrieval/prediction
 - MLflow, monitoring, CI/CD, or remote DVC storage
+
+## Local MLflow Runtime
+Phase 3 starts with a local MLflow tracking server for development. This step only sets up the tracking environment; training and serving are not wired to MLflow yet.
+
+### Start the MLflow server
+Run from the project root:
+```bash
+mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000
+```
+
+### Local storage choices
+- Backend store: `sqlite:///mlflow.db`
+- Artifact store: `./mlruns`
+
+### Access the UI
+Open:
+```text
+http://127.0.0.1:5000
+```

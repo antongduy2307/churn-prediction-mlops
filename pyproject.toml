@@ -19,6 +19,7 @@ dependencies = [
   "fastapi>=0.110,<1.0",
   "uvicorn[standard]>=0.29,<0.31",
   "feast[redis]>=0.40,<0.42",
+  "mlflow>=2.14,<3.0",
 ]
 
 [tool.uv.extra-build-dependencies]
