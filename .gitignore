@@ -20,3 +20,5 @@ data/processed/processed_churn_data.parquet
 # Generated local outputs
 models/
 reports/
+
+*.db
