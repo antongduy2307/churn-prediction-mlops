@@ -41,3 +41,8 @@ model:
 output:
   model_bundle_path: models/random_forest_bundle.pkl
   metrics_path: models/random_forest_metrics.json
+
+mlflow:
+  tracking_uri: http://127.0.0.1:5000
+  experiment_name: churn_local_baseline
+  run_name_prefix: random_forest

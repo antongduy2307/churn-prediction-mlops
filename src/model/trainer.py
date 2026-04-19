@@ -54,6 +54,15 @@ class OutputConfig:
 
 
 @dataclass(frozen=True)
+class MLflowConfig:
+    """Local MLflow tracking configuration."""
+
+    tracking_uri: str
+    experiment_name: str
+    run_name_prefix: str
+
+
+@dataclass(frozen=True)
 class TrainingConfig:
     """Combined training configuration."""
 
@@ -63,6 +72,7 @@ class TrainingConfig:
     model_name: str
     model_params: dict[str, Any]
     output: OutputConfig
+    mlflow: MLflowConfig | None = None
 
 
 @dataclass(frozen=True)
@@ -89,6 +99,7 @@ def build_training_config(config_dict: dict[str, Any], base_dir: Path) -> Traini
     split_section = config_dict["split"]
     model_section = config_dict["model"]
     output_section = config_dict["output"]
+    mlflow_section = config_dict.get("mlflow")
 
     return TrainingConfig(
         data=DataConfig(
@@ -113,6 +124,13 @@ def build_training_config(config_dict: dict[str, Any], base_dir: Path) -> Traini
             if output_section.get("metrics_path")
             else None,
         ),
+        mlflow=MLflowConfig(
+            tracking_uri=str(mlflow_section["tracking_uri"]),
+            experiment_name=str(mlflow_section["experiment_name"]),
+            run_name_prefix=str(mlflow_section["run_name_prefix"]),
+        )
+        if mlflow_section
+        else None,
     )
 
 

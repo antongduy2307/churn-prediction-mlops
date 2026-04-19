@@ -195,3 +195,29 @@ Open:
 ```text
 http://127.0.0.1:5000
 ```
+
+## Shared Environment
+Use one shared local environment for preprocessing, DVC, Feast, training, evaluation, FastAPI, and MLflow.
+
+Python version:
+```text
+Python 3.11
+```
+
+Install the shared environment with:
+```bash
+python -m pip install -r requirements.txt
+```
+
+This shared environment is used for:
+```bash
+python -m src.data.processing --input-path data/raw/train_period_1.csv --output-path data/processed/df_processed.csv
+python -m src.data.prepare_feast_data --input-path data/processed/df_processed.csv --output-path data/processed/processed_churn_data.parquet
+python scripts/run_feast_apply.py
+python scripts/materialize_features.py
+python scripts/sample_retrieval.py --customer-id <id>
+python -m src.scripts.train --config configs/random_forest.yaml
+python -m src.scripts.eval --model-path models/random_forest_bundle.pkl --data-path data/processed/processed_churn_data.parquet --report-dir reports
+uvicorn api.main:app --reload
+mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000
+```

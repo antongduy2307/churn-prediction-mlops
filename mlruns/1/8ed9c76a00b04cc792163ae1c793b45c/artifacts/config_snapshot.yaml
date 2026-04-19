@@ -1,0 +1,43 @@
+data:
+  training_data_path: data/processed/processed_churn_data.parquet
+features:
+  categorical_features:
+  - gender
+  - subscription_type
+  - contract_length
+  excluded_columns:
+  - customer_id
+  - event_timestamp
+  - created_timestamp
+  target_column: churned
+  training_features:
+  - age
+  - gender
+  - tenure_months
+  - subscription_type
+  - contract_length
+  - usage_frequency
+  - support_calls
+  - payment_delay_days
+  - total_spend
+  - last_interaction_days
+mlflow:
+  experiment_name: churn_local_baseline
+  run_name_prefix: random_forest
+  tracking_uri: http://127.0.0.1:5000
+model:
+  name: random_forest
+  params:
+    max_depth: null
+    min_samples_leaf: 1
+    min_samples_split: 2
+    n_estimators: 200
+    n_jobs: -1
+    random_state: 42
+output:
+  metrics_path: models/random_forest_metrics.json
+  model_bundle_path: models/random_forest_bundle.pkl
+split:
+  random_state: 42
+  stratify: true
+  test_size: 0.2

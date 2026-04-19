@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import logging
 from pathlib import Path
 
@@ -72,6 +73,68 @@ def log_resolved_config_paths(config: dict, project_root: Path) -> None:
         )
 
 
+def log_training_run_to_mlflow(
+    training_config,
+    training_result,
+    config_snapshot: dict,
+) -> None:
+    """Log the completed local training run to MLflow."""
+
+    if training_config.mlflow is None:
+        LOGGER.info("MLflow config not provided; skipping MLflow logging.")
+        return
+
+    try:
+        import mlflow
+        import mlflow.sklearn
+        from mlflow import MlflowClient
+    except ImportError as exc:
+        raise RuntimeError(
+            "MLflow is not installed in the active environment. "
+            "Install project dependencies and retry."
+        ) from exc
+
+    tracking_uri = training_config.mlflow.tracking_uri
+    mlflow.set_tracking_uri(tracking_uri)
+
+    try:
+        client = MlflowClient(tracking_uri=tracking_uri)
+        client.search_experiments(max_results=1)
+        mlflow.set_experiment(training_config.mlflow.experiment_name)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Unable to reach the MLflow tracking server at {tracking_uri}. "
+            "Start the local MLflow server and retry."
+        ) from exc
+
+    run_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    run_name = f"{training_config.mlflow.run_name_prefix}_{run_suffix}"
+
+    LOGGER.info("Logging training run to MLflow experiment '%s'", training_config.mlflow.experiment_name)
+    with mlflow.start_run(run_name=run_name):
+        mlflow.log_params(
+            {
+                "model_name": training_config.model_name,
+                "target_column": training_config.features.target_column,
+                "test_size": training_config.split.test_size,
+                "random_state": training_config.split.random_state,
+                "stratify": training_config.split.stratify,
+                "training_features": ",".join(training_config.features.training_features),
+                "categorical_features": ",".join(training_config.features.categorical_features),
+            }
+        )
+        mlflow.log_params(
+            {f"model_{key}": value for key, value in training_config.model_params.items()}
+        )
+        mlflow.log_metrics(training_result.metrics)
+        mlflow.sklearn.log_model(training_result.model, artifact_path="model")
+        mlflow.log_dict(config_snapshot, "config_snapshot.yaml")
+        mlflow.log_dict(training_result.preprocessing_metadata, "preprocessing_metadata.json")
+
+        if training_config.output.metrics_path is not None and training_config.output.metrics_path.exists():
+            mlflow.log_artifact(str(training_config.output.metrics_path))
+
+
 def main() -> None:
     """Run local baseline model training from a YAML config."""
 
@@ -87,6 +150,7 @@ def main() -> None:
 
     trainer = GenericBinaryClassifierTrainer(training_config)
     result = trainer.run()
+    log_training_run_to_mlflow(training_config, result, config_dict)
 
     LOGGER.info("Training completed. Metrics: %s", result.metrics)
     LOGGER.info("Model bundle saved to %s", result.artifact_path)
