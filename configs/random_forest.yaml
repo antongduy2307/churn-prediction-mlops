@@ -46,3 +46,4 @@ mlflow:
   tracking_uri: http://127.0.0.1:5000
   experiment_name: churn_local_baseline
   run_name_prefix: random_forest
+  registered_model_name: churn_random_forest

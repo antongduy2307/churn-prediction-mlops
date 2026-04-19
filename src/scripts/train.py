@@ -77,12 +77,12 @@ def log_training_run_to_mlflow(
     training_config,
     training_result,
     config_snapshot: dict,
-) -> None:
+) -> tuple[str, str] | None:
     """Log the completed local training run to MLflow."""
 
     if training_config.mlflow is None:
         LOGGER.info("MLflow config not provided; skipping MLflow logging.")
-        return
+        return None
 
     try:
         import mlflow
@@ -111,7 +111,7 @@ def log_training_run_to_mlflow(
     run_name = f"{training_config.mlflow.run_name_prefix}_{run_suffix}"
 
     LOGGER.info("Logging training run to MLflow experiment '%s'", training_config.mlflow.experiment_name)
-    with mlflow.start_run(run_name=run_name):
+    with mlflow.start_run(run_name=run_name) as run:
         mlflow.log_params(
             {
                 "model_name": training_config.model_name,
@@ -134,6 +134,53 @@ def log_training_run_to_mlflow(
         if training_config.output.metrics_path is not None and training_config.output.metrics_path.exists():
             mlflow.log_artifact(str(training_config.output.metrics_path))
 
+        model_uri = f"runs:/{run.info.run_id}/model"
+        return tracking_uri, model_uri
+
+
+def register_model_in_mlflow(training_config, tracking_uri: str, model_uri: str) -> None:
+    """Register the logged MLflow model into the local MLflow Model Registry."""
+
+    registered_model_name = training_config.mlflow.registered_model_name
+
+    try:
+        import mlflow
+        from mlflow import MlflowClient
+        from mlflow.exceptions import MlflowException
+    except ImportError as exc:
+        raise RuntimeError(
+            "MLflow is not installed in the active environment. "
+            "Install project dependencies and retry."
+        ) from exc
+
+    mlflow.set_tracking_uri(tracking_uri)
+    client = MlflowClient(tracking_uri=tracking_uri)
+
+    try:
+        client.create_registered_model(registered_model_name)
+        LOGGER.info("Created registered model '%s'", registered_model_name)
+    except MlflowException as exc:
+        if "RESOURCE_ALREADY_EXISTS" not in str(exc):
+            raise RuntimeError(
+                f"Failed to create registered model '{registered_model_name}'."
+            ) from exc
+
+    try:
+        model_version = mlflow.register_model(
+            model_uri=model_uri,
+            name=registered_model_name,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to register model URI '{model_uri}' under '{registered_model_name}'."
+        ) from exc
+
+    LOGGER.info(
+        "Registered MLflow model '%s' as version %s",
+        registered_model_name,
+        model_version.version,
+    )
+
 
 def main() -> None:
     """Run local baseline model training from a YAML config."""
@@ -150,7 +197,10 @@ def main() -> None:
 
     trainer = GenericBinaryClassifierTrainer(training_config)
     result = trainer.run()
-    log_training_run_to_mlflow(training_config, result, config_dict)
+    mlflow_run_info = log_training_run_to_mlflow(training_config, result, config_dict)
+    if training_config.mlflow is not None and mlflow_run_info is not None:
+        tracking_uri, model_uri = mlflow_run_info
+        register_model_in_mlflow(training_config, tracking_uri, model_uri)
 
     LOGGER.info("Training completed. Metrics: %s", result.metrics)
     LOGGER.info("Model bundle saved to %s", result.artifact_path)
