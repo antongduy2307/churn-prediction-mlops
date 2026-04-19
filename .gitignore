@@ -21,4 +21,5 @@ data/processed/processed_churn_data.parquet
 models/
 reports/
 
-*.db
+# Generated local Feast registry state
+feature_repo/registry.db

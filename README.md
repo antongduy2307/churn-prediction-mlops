@@ -119,3 +119,60 @@ The materialization wrapper generates the current UTC timestamp at runtime and c
 ```bash
 feast materialize-incremental <current-utc-timestamp>
 ```
+
+## Phase 2 Runbook
+Phase 2 adds local data/versioning and local Feast online feature retrieval by `customer_id`. It does not yet integrate FastAPI with Feast, and `/predict/{customer_id}` is not implemented yet.
+
+### Prerequisites
+- `data/processed/processed_churn_data.parquet` already exists
+- DVC metadata has already been initialized locally
+- Redis is running on `localhost:6379`
+- Feast is installed in the active environment
+
+### Phase 2 Workflow
+1. Check local DVC-tracked data status:
+```bash
+dvc status
+```
+
+2. Start Redis:
+```bash
+redis-server --port 6379
+```
+
+Docker alternative:
+```bash
+docker run --name churn-redis -p 6379:6379 redis:7
+```
+
+3. Apply the Feast repo:
+```bash
+python scripts/run_feast_apply.py
+```
+
+4. Materialize online features:
+```bash
+python scripts/materialize_features.py
+```
+
+5. Retrieve online features for one customer:
+```bash
+python scripts/sample_retrieval.py --customer-id <id>
+```
+
+Optional debug retrieval including the target:
+```bash
+python scripts/sample_retrieval.py --customer-id <id> --include-target
+```
+
+### Current Phase 2 Scope
+Supported now:
+- Local DVC tracking for the main raw and processed data artifacts
+- Local Feast repo apply/materialization
+- Local online feature retrieval by `customer_id`
+
+Not implemented yet:
+- FastAPI to Feast integration
+- `/predict/{customer_id}`
+- Batch retrieval/prediction
+- MLflow, monitoring, CI/CD, or remote DVC storage
