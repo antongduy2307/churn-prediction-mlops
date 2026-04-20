@@ -5,7 +5,10 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from api.schemas import CustomerPredictionResponse, PredictionRequest, PredictionResponse
-from src.serving.feast_retrieval import retrieve_online_features
+from src.serving.feast_retrieval import (
+    retrieve_online_features,
+    validate_feature_mapping_consistency,
+)
 from src.serving.load_model import get_model_bundle
 from src.serving.pre_processing import prepare_inference_dataframe
 
@@ -45,6 +48,10 @@ def predict_by_customer_id(customer_id: int) -> CustomerPredictionResponse:
     try:
         bundle = get_model_bundle()
         feature_payload = retrieve_online_features(customer_id=customer_id)
+        validate_feature_mapping_consistency(
+            training_features=bundle["training_features"],
+            retrieved_features=feature_payload,
+        )
         inference_df = prepare_inference_dataframe(feature_payload, bundle)
         model = bundle["model"]
 

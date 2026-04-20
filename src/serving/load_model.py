@@ -46,6 +46,18 @@ def _resolve_model_uri() -> str:
     return os.getenv("MODEL_URI", DEFAULT_MODEL_URI)
 
 
+def _derive_registered_model_name(model_uri: str) -> str | None:
+    """Derive the registered model name when using an MLflow registry URI."""
+
+    if not model_uri.startswith("models:/"):
+        return None
+
+    model_path = model_uri.removeprefix("models:/")
+    if "/" not in model_path:
+        return model_path or None
+    return model_path.split("/", maxsplit=1)[0] or None
+
+
 def _validate_metadata_bundle(bundle: dict[str, Any]) -> dict[str, Any]:
     """Validate that the loaded local bundle exposes required preprocessing metadata."""
 
@@ -161,3 +173,21 @@ def get_model_bundle(model_path: str | Path | None = None) -> dict[str, Any]:
     metadata_bundle["model_uri"] = model_uri
     metadata_bundle["mlflow_tracking_uri"] = tracking_uri
     return _validate_serving_components(metadata_bundle)
+
+
+def get_model_info(model_path: str | Path | None = None) -> dict[str, Any]:
+    """Return concise serving model metadata without forcing model inference calls."""
+
+    model_bundle_path = _resolve_model_bundle_path(model_path)
+    metadata_bundle = _load_metadata_bundle_cached(str(model_bundle_path))
+    model_uri = _resolve_model_uri()
+
+    return {
+        "model_uri": model_uri,
+        "registered_model_name": _derive_registered_model_name(model_uri),
+        "model_bundle_path": str(model_bundle_path),
+        "training_features": list(metadata_bundle["training_features"]),
+        "categorical_features": list(metadata_bundle["categorical_features"]),
+        "target_column": str(metadata_bundle["target_column"]),
+        "mlflow_tracking_uri": _resolve_mlflow_tracking_uri(),
+    }

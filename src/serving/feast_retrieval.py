@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 BASE_FEATURE_REFERENCES: list[str] = [
     "customer_demographics:age",
@@ -16,6 +16,10 @@ BASE_FEATURE_REFERENCES: list[str] = [
     "customer_behavior:payment_delay_days",
     "customer_behavior:total_spend",
     "customer_behavior:last_interaction_days",
+]
+
+EXPECTED_FEATURE_NAMES: list[str] = [
+    feature_ref.split(":", maxsplit=1)[1] for feature_ref in BASE_FEATURE_REFERENCES
 ]
 
 
@@ -88,3 +92,29 @@ def retrieve_online_features(
         )
 
     return features
+
+
+def validate_feature_mapping_consistency(
+    training_features: list[str],
+    retrieved_features: Mapping[str, Any] | None = None,
+) -> None:
+    """Validate that Feast feature names match serving/training expectations exactly."""
+
+    expected_names = set(EXPECTED_FEATURE_NAMES)
+    training_names = set(training_features)
+
+    if training_names != expected_names:
+        raise ValueError(
+            "Feast feature references do not match bundle training_features. "
+            f"training_features={sorted(training_names)}, feast_features={sorted(expected_names)}"
+        )
+
+    if retrieved_features is None:
+        return
+
+    retrieved_names = set(retrieved_features.keys())
+    if retrieved_names != training_names:
+        raise ValueError(
+            "Retrieved Feast feature payload does not match serving expectations. "
+            f"retrieved={sorted(retrieved_names)}, expected={sorted(training_names)}"
+        )

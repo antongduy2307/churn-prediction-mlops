@@ -39,3 +39,26 @@ class HealthResponse(BaseModel):
     """Minimal health status schema."""
 
     status: str
+
+
+class ReadinessResponse(BaseModel):
+    """Readiness response schema for local debugging."""
+
+    status: str
+    api_alive: bool
+    model_ready: bool
+    feast_ready: bool
+    feature_mapping_consistent: bool
+    details: dict[str, str]
+
+
+class ModelInfoResponse(BaseModel):
+    """Serving model metadata response schema."""
+
+    model_uri: str
+    registered_model_name: str | None
+    model_bundle_path: str
+    training_features: list[str]
+    categorical_features: list[str]
+    target_column: str
+    mlflow_tracking_uri: str
