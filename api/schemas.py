@@ -27,6 +27,14 @@ class PredictionResponse(BaseModel):
     churn_prediction: int
 
 
+class CustomerPredictionResponse(BaseModel):
+    """Prediction response schema for Feast customer_id lookups."""
+
+    customer_id: int
+    churn_probability: float
+    churn_prediction: int
+
+
 class HealthResponse(BaseModel):
     """Minimal health status schema."""
 
