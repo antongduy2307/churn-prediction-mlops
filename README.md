@@ -221,3 +221,71 @@ python -m src.scripts.eval --model-path models/random_forest_bundle.pkl --data-p
 uvicorn api.main:app --reload
 mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000
 ```
+
+## Phase 3 Runbook
+Phase 3 adds local MLflow experiment tracking, local model registration, and registry-backed inference loading for the FastAPI service.
+
+### Start the MLflow server
+Run from the project root:
+```bash
+mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000
+```
+
+MLflow UI:
+```text
+http://127.0.0.1:5000
+```
+
+### Run training with MLflow enabled
+```bash
+python -m src.scripts.train --config configs/random_forest.yaml
+```
+
+Training now logs to MLflow:
+- model parameters
+- split settings
+- training feature list
+- categorical feature list
+- evaluation metrics
+- logged sklearn model artifact
+
+Training also registers the logged model under:
+```text
+churn_random_forest
+```
+
+Each successful training run creates a new MLflow model version.
+
+### Serving model resolution
+FastAPI serving now loads the inference estimator from MLflow Model Registry via `MODEL_URI`.
+
+Default behavior:
+```text
+MODEL_URI=models:/churn_random_forest/latest
+```
+
+Preprocessing metadata still comes from the local bundle:
+```text
+models/random_forest_bundle.pkl
+```
+
+### Environment variables
+Useful local settings:
+```text
+MLFLOW_TRACKING_URI=http://127.0.0.1:5000
+MODEL_URI=models:/churn_random_forest/latest
+MODEL_BUNDLE_PATH=models/random_forest_bundle.pkl
+```
+
+### Current Phase 3 Scope
+Supported now:
+- local MLflow tracking server
+- experiment tracking during training
+- local MLflow Model Registry registration
+- FastAPI inference model loading from MLflow registry
+
+Not implemented yet:
+- stage transitions
+- alias-based promotion
+- automated deployment
+- Feast-integrated API inference
