@@ -27,4 +27,4 @@ jobs:
         run: python -m compileall src api scripts
 
       - name: Run smoke test
-        run: python scripts/smoke_test.py
+        run: python scripts/smoke_test.py --ci
