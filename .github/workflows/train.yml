@@ -1,0 +1,64 @@
+name: Train
+
+on:
+  workflow_dispatch:
+
+jobs:
+  train-and-evaluate:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install project dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Install DVC S3 support
+        run: python -m pip install "dvc[s3]"
+
+      - name: Pull data from DVC remote
+        run: dvc pull
+
+      - name: Run preprocessing
+        run: python -m src.data.processing --input-path data/raw/train_period_1.csv --output-path data/processed/df_processed.csv
+
+      - name: Prepare Feast-ready parquet
+        run: python -m src.data.prepare_feast_data --input-path data/processed/df_processed.csv --output-path data/processed/processed_churn_data.parquet
+
+      - name: Train model
+        run: python -m src.scripts.train --config configs/random_forest.yaml
+
+      - name: Evaluate model
+        run: python -m src.scripts.eval --model-path models/random_forest_bundle.pkl --data-path data/processed/processed_churn_data.parquet --report-dir reports
+
+      - name: Upload training and evaluation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: churn-training-artifacts
+          if-no-files-found: error
+          path: |
+            models/random_forest_bundle.pkl
+            models/random_forest_metrics.json
+            reports/evaluation_metrics.json
+            reports/predictions.csv
+            reports/confusion_matrix.png
+
+      - name: Upload optional feature importance artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: churn-feature-importance
+          if-no-files-found: warn
+          path: reports/feature_importance.png
