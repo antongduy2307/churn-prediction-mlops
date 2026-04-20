@@ -29,6 +29,13 @@ jobs:
       - name: Install DVC S3 support
         run: python -m pip install "dvc[s3]"
 
+      - name: Check AWS secrets presence
+        run: |
+          test -n "$AWS_ACCESS_KEY_ID" || (echo "AWS_ACCESS_KEY_ID is missing" && exit 1)
+          test -n "$AWS_SECRET_ACCESS_KEY" || (echo "AWS_SECRET_ACCESS_KEY is missing" && exit 1)
+          test -n "$AWS_DEFAULT_REGION" || (echo "AWS_DEFAULT_REGION is missing" && exit 1)
+          echo "AWS secrets are present"
+
       - name: Pull data from DVC remote
         run: dvc pull
 
