@@ -27,3 +27,6 @@ feature_repo/registry.db
 .depcheckA/
 .depcheckB/
 .depcheckC/
+
+mlruns/
+mlflow.db
