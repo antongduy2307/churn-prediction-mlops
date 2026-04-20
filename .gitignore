@@ -30,3 +30,5 @@ feature_repo/registry.db
 
 mlruns/
 mlflow.db
+
+.env
