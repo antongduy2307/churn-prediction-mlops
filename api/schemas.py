@@ -35,6 +35,24 @@ class CustomerPredictionResponse(BaseModel):
     churn_prediction: int
 
 
+class BatchPredictionItemResponse(BaseModel):
+    """Per-record batch prediction result."""
+
+    index: int
+    churn_probability: float | None = None
+    churn_prediction: int | None = None
+    error: str | None = None
+
+
+class BatchPredictionResponse(BaseModel):
+    """Batch prediction response schema."""
+
+    total_records: int
+    success_count: int
+    error_count: int
+    predictions: list[BatchPredictionItemResponse]
+
+
 class HealthResponse(BaseModel):
     """Minimal health status schema."""
 
