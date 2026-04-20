@@ -80,3 +80,13 @@ class ModelInfoResponse(BaseModel):
     categorical_features: list[str]
     target_column: str
     mlflow_tracking_uri: str
+
+
+class DriftReportResponse(BaseModel):
+    """Response schema for on-demand drift report generation."""
+
+    status: str
+    reference_path: str
+    current_path: str
+    report_path: str
+    compared_columns: list[str]
