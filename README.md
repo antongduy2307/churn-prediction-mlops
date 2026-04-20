@@ -289,3 +289,103 @@ Not implemented yet:
 - alias-based promotion
 - automated deployment
 - Feast-integrated API inference
+
+## Phase 4 Runbook
+Phase 4 adds customer_id-based API inference via Feast, JSON batch inference, richer health/readiness debugging, model info visibility, and on-demand local drift reporting.
+
+### Serving endpoints
+Available endpoints:
+- `POST /predict`
+- `GET /predict/{customer_id}`
+- `POST /predict/batch`
+- `GET /health`
+- `GET /health/ready`
+- `GET /model/info`
+- `GET /monitor/drift`
+
+### Direct payload inference
+`POST /predict` accepts a single feature payload, rebuilds the inference frame in training feature order, applies local preprocessing metadata from the bundle, and runs the estimator loaded from MLflow Model Registry.
+
+Example:
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"age":42,"gender":"Female","tenure_months":24,"subscription_type":"Premium","contract_length":"Annual","usage_frequency":15,"support_calls":2,"payment_delay_days":3,"total_spend":1200,"last_interaction_days":7}'
+```
+
+### Feast customer_id inference
+`GET /predict/{customer_id}` retrieves online features from Feast, validates the retrieved feature names against serving expectations, then scores the MLflow-loaded estimator.
+
+Example:
+```bash
+curl "http://127.0.0.1:8000/predict/12345"
+```
+
+### Batch payload inference
+`POST /predict/batch` accepts a JSON list of payload records using the same schema as `POST /predict`. Each record is processed independently, and failures are returned per-record instead of failing the whole batch.
+
+Example:
+```bash
+curl -X POST "http://127.0.0.1:8000/predict/batch" \
+  -H "Content-Type: application/json" \
+  -d '[{"age":42,"gender":"Female","tenure_months":24,"subscription_type":"Premium","contract_length":"Annual","usage_frequency":15,"support_calls":2,"payment_delay_days":3,"total_spend":1200,"last_interaction_days":7},{"age":"bad","gender":"Male","tenure_months":12,"subscription_type":"Basic","contract_length":"Monthly","usage_frequency":8,"support_calls":1,"payment_delay_days":0,"total_spend":300,"last_interaction_days":14}]'
+```
+
+### Health, readiness, and model info
+- `GET /health` checks that the API process is alive
+- `GET /health/ready` reports whether:
+  - model loading is ready
+  - Feast repo is loadable
+  - feature mapping is consistent
+- `GET /model/info` shows the active serving model URI, local bundle path, training features, categorical features, and target column
+
+Examples:
+```bash
+curl "http://127.0.0.1:8000/health"
+curl "http://127.0.0.1:8000/health/ready"
+curl "http://127.0.0.1:8000/model/info"
+```
+
+### Drift reporting
+`GET /monitor/drift` generates a local Evidently HTML drift report on request.
+
+Default local paths:
+- reference: `data/processed/df_processed.csv`
+- current: `data/processed/processed_churn_data.parquet`
+- output dir: `reports/drift/`
+
+Example:
+```bash
+curl "http://127.0.0.1:8000/monitor/drift"
+```
+
+Example with explicit paths:
+```bash
+curl "http://127.0.0.1:8000/monitor/drift?reference_path=data/processed/df_processed.csv&current_path=data/processed/processed_churn_data.parquet"
+```
+
+### Serving configuration and paths
+Key serving inputs:
+```text
+MLFLOW_TRACKING_URI=http://127.0.0.1:5000
+MODEL_URI=models:/churn_random_forest/latest
+MODEL_BUNDLE_PATH=models/random_forest_bundle.pkl
+```
+
+Important local paths:
+- `feature_repo/`
+- `reports/drift/`
+
+### Current Phase 4 Scope
+Supported now:
+- direct payload inference
+- Feast-based customer_id inference
+- JSON batch inference
+- local readiness/model-info endpoints
+- on-demand local drift report generation
+
+Not implemented yet:
+- automated deployment
+- alerting or monitoring scheduler
+- stage-based promotion logic in serving
+- production-grade auth or rate limiting
