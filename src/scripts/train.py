@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import logging
+import os
 from pathlib import Path
 
 import yaml
@@ -73,6 +74,22 @@ def log_resolved_config_paths(config: dict, project_root: Path) -> None:
         )
 
 
+def resolve_mlflow_tracking_uri(training_config) -> str | None:
+    """Resolve MLflow tracking URI with environment override support."""
+
+    if training_config.mlflow is None:
+        return None
+
+    return os.getenv("MLFLOW_TRACKING_URI", training_config.mlflow.tracking_uri)
+
+
+def should_skip_mlflow_registration() -> bool:
+    """Return whether MLflow model registration should be skipped."""
+
+    raw_value = os.getenv("SKIP_MLFLOW_REGISTRATION", "")
+    return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def log_training_run_to_mlflow(
     training_config,
     training_result,
@@ -94,7 +111,7 @@ def log_training_run_to_mlflow(
             "Install project dependencies and retry."
         ) from exc
 
-    tracking_uri = training_config.mlflow.tracking_uri
+    tracking_uri = resolve_mlflow_tracking_uri(training_config)
     mlflow.set_tracking_uri(tracking_uri)
 
     try:
@@ -200,7 +217,10 @@ def main() -> None:
     mlflow_run_info = log_training_run_to_mlflow(training_config, result, config_dict)
     if training_config.mlflow is not None and mlflow_run_info is not None:
         tracking_uri, model_uri = mlflow_run_info
-        register_model_in_mlflow(training_config, tracking_uri, model_uri)
+        if should_skip_mlflow_registration():
+            LOGGER.info("Skipping MLflow model registration because SKIP_MLFLOW_REGISTRATION is enabled.")
+        else:
+            register_model_in_mlflow(training_config, tracking_uri, model_uri)
 
     LOGGER.info("Training completed. Metrics: %s", result.metrics)
     LOGGER.info("Model bundle saved to %s", result.artifact_path)
